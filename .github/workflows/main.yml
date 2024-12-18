@@ -53,20 +53,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ap-southeast-1
         run: |
-          cd terraform
           terraform init
 
       - name: Terraform Plan
         env:
           SECRET_NAME: ${{ secrets.SECRET_NAME }}
         run: |
-          cd terraform 
           terraform plan -out "plan.out" -var "secret_name=$SECRET_NAME"
 
       - name: Terraform Apply
         if: github.event.inputs.destroy != 'true'
         run: |
-          cd terraform
           terraform apply -auto-approve "plan.out"
 
       - name: Terraform Destroy
@@ -74,6 +71,5 @@ jobs:
         env:
           SECRET_NAME: ${{ secrets.SECRET_NAME }}
         run: |
-          cd terraform
           terraform destroy -auto-approve \
             -var "secret_name=$SECRET_NAME"
