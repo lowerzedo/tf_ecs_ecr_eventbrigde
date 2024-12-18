@@ -30,8 +30,8 @@ resource "aws_scheduler_schedule" "schedule" {
 
       network_configuration {
         assign_public_ip = false
-        security_groups  = [aws_security_group.ecs_task_sg.id]
         subnets          = data.aws_subnets.private.ids
+        security_groups  = [aws_security_group.ecs_task_sg.id]
       }
 
       capacity_provider_strategy {

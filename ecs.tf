@@ -49,8 +49,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
 
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 2048 # 2 vCPU
-  memory                   = 4096 # 4 GB
+  cpu                      = 1024 # 2 vCPU
+  memory                   = 2048 # 4 GB
   network_mode             = "awsvpc"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
