@@ -1,4 +1,4 @@
-name: Terraform CI/CD
+name: ECS Fargate with Terraform
 
 on:
   push:
@@ -6,120 +6,74 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      action:
-        description: "Choose Terraform Action: destroy"
+      destroy:
+        description: "Destroy infrastructure"
         required: true
-        default: "destroy"
-
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-  SECRET_NAME: ${{ secrets.SECRET_NAME }}
-  TERRAFORM_VERSION: "1.7.2"
+        default: "false"
 
 jobs:
-  plan:
-    if: github.event_name == 'push'
-    name: Plan Terraform
+  deploy_or_destroy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          lfs: true
+          terraform_version: 1.5.0
 
       - name: Install AWS CLI
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip awscli
+          sudo apt-get install -y unzip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -o awscliv2.zip
+          sudo ./aws/install --update
 
       - name: Configure AWS CLI
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-1
         run: |
           aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
           aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
           aws configure set default.region $AWS_DEFAULT_REGION
 
-      - name: Install Terraform
+      - name: Print Debug Info
         run: |
-          wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          sudo mv terraform /usr/local/bin/
+          echo "AWS Access Key: ${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "AWS Region: ap-southeast-1"
 
       - name: Terraform Init
-        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-1
+        run: |
+          cd terraform
+          terraform init
 
       - name: Terraform Plan
-        run: terraform plan -var secret_name=$SECRET_NAME -out "plan.out"
-
-      - name: Upload Terraform Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-plan
-          path: plan.out
-
-  apply:
-    if: github.event_name == 'push'
-    name: Deploy Terraform
-    runs-on: ubuntu-latest
-    needs: plan
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install AWS CLI
+        env:
+          SECRET_NAME: ${{ secrets.SECRET_NAME }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip awscli
-
-      - name: Configure AWS CLI
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set default.region $AWS_DEFAULT_REGION
-
-      - name: Install Terraform
-        run: |
-          wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          sudo mv terraform /usr/local/bin/
-
-      - name: Download Terraform Plan
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-plan
-          path: .
+          cd terraform 
+          terraform plan -out "plan.out" -var "secret_name=$SECRET_NAME"
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve plan.out
-
-  destroy:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-    name: Terraform Destroy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install AWS CLI
+        if: github.event.inputs.destroy != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip awscli
-
-      - name: Configure AWS CLI
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set default.region $AWS_DEFAULT_REGION
-
-      - name: Install Terraform
-        run: |
-          wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          sudo mv terraform /usr/local/bin/
-
-      - name: Terraform Init
-        run: terraform init
+          cd terraform
+          terraform apply -auto-approve "plan.out"
 
       - name: Terraform Destroy
-        run: terraform destroy -var secret_name=$SECRET_NAME -auto-approve
+        if: github.event.inputs.destroy == 'true'
+        env:
+          SECRET_NAME: ${{ secrets.SECRET_NAME }}
+        run: |
+          cd terraform
+          terraform destroy -auto-approve \
+            -var "secret_name=$SECRET_NAME"
