@@ -49,8 +49,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
 
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 1024 # 2 vCPU
-  memory                   = 2048 # 4 GB
+  cpu                      = 256 # 2 vCPU
+  memory                   = 512 # 4 GB
   network_mode             = "awsvpc"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
@@ -65,8 +65,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
       {
         "name": "${var.project_name}-container",
         "image": "${aws_ecr_repository.ecr.repository_url}:latest",
-        "cpu": 2048,
-        "memory": 4096,
+        "cpu": 256,
+        "memory": 512,
         "essential": true,
         "environment": [
           {
