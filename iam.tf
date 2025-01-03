@@ -115,11 +115,13 @@ resource "aws_iam_policy" "scheduler_policy" {
             "ecs:RunTask",
             "ecs:StopTask",
             "ecs:DescribeTasks",
-            "ecs:ListTasks",
-            "ecs:DescribeTaskDefinition",
-            "ecs:TagResource",
             "iam:PassRole",
-            "ecs:DescribeClusters"
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "logs:CreateLogGroup",
+            "ec2:CreateNetworkInterface",
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:DeleteNetworkInterface"
           ],
           "Resource" : "*"
         },
@@ -180,4 +182,15 @@ resource "aws_iam_policy" "secrets_manager_access_policy" {
 resource "aws_iam_role_policy_attachment" "ecs_task_role_secrets_manager_access" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.secrets_manager_access_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Add CloudWatch permissions to execution role
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_cloudwatch" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
