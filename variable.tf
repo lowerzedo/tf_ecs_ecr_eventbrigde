@@ -28,5 +28,3 @@ variable "secret_name" {
   description = "Value of the secret name"
   type        = string
 }
-
-
