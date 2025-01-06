@@ -112,29 +112,20 @@ resource "aws_iam_policy" "scheduler_policy" {
         {
           "Effect" : "Allow",
           "Action" : [
-            "ecs:RunTask",
-            "ecs:StopTask",
-            "ecs:DescribeTasks",
+            "ecs:*",
             "iam:PassRole",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents",
-            "logs:CreateLogGroup",
-            "ec2:CreateNetworkInterface",
-            "ec2:DescribeNetworkInterfaces",
-            "ec2:DeleteNetworkInterface"
+            "logs:*",
+            "ec2:*",
+            "secretsmanager:GetSecretValue"
           ],
           "Resource" : "*"
         },
         {
           "Effect" : "Allow",
           "Action" : [
-            "ecs:DescribeClusters",
-            "ecs:DescribeTasks",
-            "ecs:ListTasks",
-            "ecs:DescribeTaskDefinition",
-            "ec2:DescribeSubnets",
-            "ec2:DescribeSecurityGroups",
-            "ec2:DescribeNetworkInterfaces"
+            "ecs:*",
+            "ec2:*",
+            "secretsmanager:GetSecretValue"
           ],
           "Resource" : "*"
         },
