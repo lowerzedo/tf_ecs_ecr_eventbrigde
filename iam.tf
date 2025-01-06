@@ -207,7 +207,7 @@ resource "aws_iam_role_policy" "scheduler_policy" {
         Action = [
           "ecs:DescribeClusters"
         ]
-        Resource = aws_ecs_cluster.ecs_cluster.arn
+        Resource = aws_ecs_cluster.ecs.arn
       },
       {
         Effect = "Allow"

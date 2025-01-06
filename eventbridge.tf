@@ -9,7 +9,7 @@ resource "aws_scheduler_schedule" "schedule" {
   }
 
   target {
-    arn      = aws_ecs_cluster.ecs_cluster.arn
+    arn      = aws_ecs_cluster.ecs.arn
     role_arn = aws_iam_role.scheduler.arn
 
     ecs_parameters {
