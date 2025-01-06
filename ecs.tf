@@ -47,10 +47,10 @@ resource "aws_ecs_task_definition" "ecs_task" {
     aws_iam_role.ecs_task_role
   ]
 
-  family                   = "${var.project_name}-task"
+  family                   = "sync-odl-script-task"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 256 # 2 vCPU
-  memory                   = 512 # 4 GB
+  cpu                      = 256
+  memory                   = 512
   network_mode             = "awsvpc"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
