@@ -1,8 +1,19 @@
 # Create Cron job to trigger ECS Task
 resource "aws_scheduler_schedule" "schedule" {
-  name                = "${var.project_name}-schedule"
-  group_name          = "default"
-  schedule_expression = "cron(0/5 * * * ? *)"
+  depends_on = [
+    aws_iam_role.scheduler,
+    aws_ecs_cluster.ecs,
+    aws_ecs_task_definition.ecs_task,
+    data.aws_subnets.private,
+    aws_security_group.ecs_task_sg,
+    aws_iam_role_policy_attachment.scheduler_policy
+  ]
+
+  name                         = "${var.project_name}-schedule"
+  description                  = "Schedule to trigger ECS Task"
+  schedule_expression          = "cron(0/5 * * * ? *)" #for debugging scheduled every five minute: 0/5 * * * ? * | old cron(35 9 * * ? *)
+  schedule_expression_timezone = "Asia/Kuala_Lumpur"
+  state                        = "ENABLED"
 
   flexible_time_window {
     mode = "OFF"
@@ -16,11 +27,28 @@ resource "aws_scheduler_schedule" "schedule" {
       task_definition_arn = aws_ecs_task_definition.ecs_task.arn
       launch_type         = "FARGATE"
 
+      task_count = 1
+
       network_configuration {
-        subnets          = data.aws_subnets.private.ids
+        assign_public_ip = true
         security_groups  = [aws_security_group.ecs_task_sg.id]
-        assign_public_ip = false
+        subnets          = data.aws_subnets.public.ids
+      }
+
+      capacity_provider_strategy {
+        capacity_provider = "FARGATE"
+        weight            = 1
       }
     }
+
+    retry_policy {
+      maximum_event_age_in_seconds = 300
+      maximum_retry_attempts       = 10
+    }
+  }
+
+  # Replace ECS Task when new task definition is available
+  lifecycle {
+    replace_triggered_by = [aws_ecs_task_definition.ecs_task.arn]
   }
 }

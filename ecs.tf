@@ -47,7 +47,7 @@ resource "aws_ecs_task_definition" "ecs_task" {
     aws_iam_role.ecs_task_role
   ]
 
-  family                   = "sync-odl-script-task"
+  family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
   cpu                      = 256
   memory                   = 512
@@ -60,28 +60,34 @@ resource "aws_ecs_task_definition" "ecs_task" {
     cpu_architecture        = "X86_64"
   }
 
-  container_definitions = jsonencode([
-    {
-      name      = "${var.project_name}-container"
-      image     = "${aws_ecr_repository.ecr.repository_url}:latest"
-      essential = true
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "/ecs/${var.project_name}"
-          "awslogs-region"        = data.aws_region.current.name
-          "awslogs-stream-prefix" = "ecs"
-          "awslogs-create-group"  = "true"
+  container_definitions = <<-DEFINITION
+    [
+      {
+        "name": "${var.project_name}-container",
+        "image": "${aws_ecr_repository.ecr.repository_url}:latest",
+        "cpu": 256,
+        "memory": 512,
+        "essential": true,
+        "environment": [
+          {
+            "name": "STAGE",
+            "value": "prod"
+          },
+          {
+            "name": "SECRET_NAME",
+            "value": "${var.secret_name}"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "${var.project_name}-logs",
+            "awslogs-region": "${data.aws_region.current.name}",
+            "awslogs-stream-prefix": "ecs",
+            "awslogs-create-group": "true"
+          }
         }
       }
-
-      environment = [
-        {
-          name  = "STAGE"
-          value = "prod"
-        }
-      ]
-    }
-  ])
+    ]
+  DEFINITION
 }
