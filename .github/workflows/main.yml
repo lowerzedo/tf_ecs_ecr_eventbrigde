@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - version_2
+      - ecs_schedule_task
   workflow_dispatch:
     inputs:
       destroy:
